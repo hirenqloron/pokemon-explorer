@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../lib/api";
 import type { Pokemon } from "../types/pokemon";
 
@@ -7,7 +7,11 @@ export function useSearch() {
   const [results, setResults] = useState<Pokemon[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const searchIdRef = useRef(0);
+
   const performSearch = useCallback(async (searchQuery: string) => {
+    const currentSearchId = ++searchIdRef.current;
+
     if (!searchQuery.trim()) {
       setResults([]);
       setIsSearching(false);
@@ -15,14 +19,21 @@ export function useSearch() {
     }
 
     setIsSearching(true);
+
     try {
       const data = await api.searchPokemon(searchQuery);
-      setResults(data);
+
+      if (currentSearchId === searchIdRef.current) {
+        setResults(data);
+        setIsSearching(false);
+      }
     } catch (error) {
       console.error("Search error:", error);
-      setResults([]);
-    } finally {
-      setIsSearching(false);
+
+      if (currentSearchId === searchIdRef.current) {
+        setResults([]);
+        setIsSearching(false);
+      }
     }
   }, []);
 
@@ -31,13 +42,23 @@ export function useSearch() {
       performSearch(query);
     }, 300);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [query, performSearch]);
+
+  const clearSearch = useCallback(() => {
+    setQuery("");
+    setResults([]);
+    setIsSearching(false);
+    searchIdRef.current = 0;
+  }, []);
 
   return {
     query,
     setQuery,
     results,
     isSearching,
+    clearSearch,
   };
 }

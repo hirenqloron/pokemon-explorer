@@ -4,6 +4,8 @@ import {
   useState,
   useEffect,
   type ReactNode,
+  useCallback,
+  useMemo,
 } from "react";
 import type { Pokemon, SortOption, FilterType } from "../types/pokemon";
 
@@ -26,65 +28,96 @@ const FAVORITES_KEY = "pokemon-favorites";
 
 export function PokemonProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<number[]>(() => {
-    const saved = localStorage.getItem(FAVORITES_KEY);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Failed to load favorites from localStorage:", error);
+      return [];
+    }
   });
 
   const [sortOption, setSortOption] = useState<SortOption>("id-asc");
   const [filterType, setFilterType] = useState<FilterType>("all");
 
   useEffect(() => {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    try {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    } catch (error) {
+      console.error("Failed to save favorites to localStorage:", error);
+    }
   }, [favorites]);
 
-  const addFavorite = (id: number) => {
-    setFavorites((prev) => [...prev, id]);
-  };
+  const addFavorite = useCallback((id: number) => {
+    setFavorites((prev) => {
+      if (prev.includes(id)) return prev;
+      return [...prev, id];
+    });
+  }, []);
 
-  const removeFavorite = (id: number) => {
+  const removeFavorite = useCallback((id: number) => {
     setFavorites((prev) => prev.filter((fav) => fav !== id));
-  };
+  }, []);
 
-  const isFavorite = (id: number) => {
-    return favorites.includes(id);
-  };
+  const isFavorite = useCallback(
+    (id: number) => {
+      return favorites.includes(id);
+    },
+    [favorites]
+  );
 
-  const clearFavorites = () => {
+  const clearFavorites = useCallback(() => {
     setFavorites([]);
-  };
+  }, []);
 
-  const sortPokemon = (pokemon: Pokemon[]): Pokemon[] => {
-    const sorted = [...pokemon];
+  const sortPokemon = useCallback(
+    (pokemon: Pokemon[]): Pokemon[] => {
+      const sorted = [...pokemon];
 
-    switch (sortOption) {
-      case "id-asc":
-        return sorted.sort((a, b) => a.id - b.id);
-      case "id-desc":
-        return sorted.sort((a, b) => b.id - a.id);
-      case "name-asc":
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      case "name-desc":
-        return sorted.sort((a, b) => b.name.localeCompare(a.name));
-      default:
-        return sorted;
-    }
-  };
+      switch (sortOption) {
+        case "id-asc":
+          return sorted.sort((a, b) => a.id - b.id);
+        case "id-desc":
+          return sorted.sort((a, b) => b.id - a.id);
+        case "name-asc":
+          return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        case "name-desc":
+          return sorted.sort((a, b) => b.name.localeCompare(a.name));
+        default:
+          return sorted;
+      }
+    },
+    [sortOption]
+  );
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
+      favorites,
+      addFavorite,
+      removeFavorite,
+      isFavorite,
+      clearFavorites,
+      sortOption,
+      setSortOption,
+      filterType,
+      setFilterType,
+      sortPokemon,
+    }),
+    [
+      favorites,
+      addFavorite,
+      removeFavorite,
+      isFavorite,
+      clearFavorites,
+      sortOption,
+      filterType,
+      sortPokemon,
+    ]
+  );
 
   return (
-    <PokemonContext.Provider
-      value={{
-        favorites,
-        addFavorite,
-        removeFavorite,
-        isFavorite,
-        clearFavorites,
-        sortOption,
-        setSortOption,
-        filterType,
-        setFilterType,
-        sortPokemon,
-      }}
-    >
+    <PokemonContext.Provider value={contextValue}>
       {children}
     </PokemonContext.Provider>
   );

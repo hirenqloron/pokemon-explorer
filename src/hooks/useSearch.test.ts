@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSearch } from './useSearch';
-import { api } from '@/lib/api';
+import { api } from '../lib/api';
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@/lib/api');

@@ -1,6 +1,6 @@
 import useSWR from "swr";
-import { api } from "@/lib/api";
-import { Pokemon } from "@/types/pokemon";
+import { api } from "../lib/api";
+import type { Pokemon } from "../types/pokemon";
 
 export function usePokemon(nameOrId: string | number | null) {
   const { data, error, isLoading } = useSWR(
