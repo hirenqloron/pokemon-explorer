@@ -10,6 +10,7 @@ import { usePokemonContext } from '../context/PokemonContext';
 
 export function Home() {
   const [pokemon, setPokemon] = useState<Pokemon[]>([]);
+  const [filteredPokemon, setFilteredPokemon] = useState<Pokemon[]>([]);
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -23,7 +24,7 @@ export function Home() {
   const { sortPokemon, filterType } = usePokemonContext();
 
   const loadPokemon = useCallback(async () => {
-    if (loadingRef.current || !hasMore) return;
+    if (loadingRef.current || !hasMore || filterType !== 'all') return;
     
     loadingRef.current = true;
     setLoading(true);
@@ -33,7 +34,7 @@ export function Home() {
       const detailedPokemon = await Promise.all(
         data.results.map((p: { name: string | number; }) => api.getPokemon(p.name))
       );
-
+      
       const uniquePokemon = detailedPokemon.filter(p => {
         if (loadedIdsRef.current.has(p.id)) {
           return false;
@@ -54,14 +55,42 @@ export function Home() {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [offset, hasMore]);
+  }, [offset, hasMore, filterType]);
+
+  const loadPokemonByType = useCallback(async (type: string) => {
+    setLoading(true);
+    setFilteredPokemon([]);
+    try {
+      const typePokemon = await api.getPokemonByType(type);
+      setFilteredPokemon(typePokemon);
+    } catch (error) {
+      console.error('Error loading pokemon by type:', error);
+      setFilteredPokemon([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!initialLoadDone.current) {
+    if (filterType === 'all') {
+      setFilteredPokemon([]);
+      setOffset(0);
+      setHasMore(true);
+      loadedIdsRef.current.clear();
+      if (pokemon.length === 0) {
+        loadPokemon();
+      }
+    } else {
+      loadPokemonByType(filterType);
+    }
+  }, [filterType]);
+
+  useEffect(() => {
+    if (!initialLoadDone.current && filterType === 'all') {
       initialLoadDone.current = true;
       loadPokemon();
     }
-  }, []); 
+  }, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -73,13 +102,13 @@ export function Home() {
         const scrollTop = document.documentElement.scrollTop;
         const clientHeight = window.innerHeight;
         
-        if (scrollHeight - scrollTop <= clientHeight * 1.5 && !loadingRef.current && hasMore && !query) {
+        if (scrollHeight - scrollTop <= clientHeight * 1.5 && !loadingRef.current && hasMore && !query && filterType === 'all') {
           loadPokemon();
         }
-      }, 100); 
+      }, 100);
     };
 
-    if (!query) {
+    if (!query && filterType === 'all') {
       window.addEventListener('scroll', handleScroll);
     }
     
@@ -87,7 +116,7 @@ export function Home() {
       clearTimeout(timeoutId);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMore, query, loadPokemon]);
+  }, [hasMore, query, loadPokemon, filterType]);
 
   useEffect(() => {
     if (query) {
@@ -95,11 +124,11 @@ export function Home() {
     }
   }, [query]);
 
-  const displayPokemon = query ? results : pokemon;
-  const filteredPokemon = filterType === 'all' 
-    ? displayPokemon
-    : displayPokemon.filter(p => p.types.some(t => t.type.name === filterType));
-  const sortedPokemon = sortPokemon(filteredPokemon);
+  const displayPokemon = query 
+    ? results 
+    : (filterType === 'all' ? pokemon : filteredPokemon);
+  
+  const sortedPokemon = sortPokemon(displayPokemon);
 
   return (
     <div style={{ 
@@ -221,7 +250,9 @@ export function Home() {
             animation: 'spin 1s linear infinite',
             marginBottom: '12px',
           }}></div>
-          <div>Loading more Pokémon...</div>
+          <div>
+            {filterType === 'all' ? 'Loading more Pokémon...' : `Loading ${filterType} type Pokémon...`}
+          </div>
         </div>
       )}
 
