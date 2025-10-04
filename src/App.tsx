@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { PokemonProvider } from "./context/PokemonContext";
 import { Home } from "./pages/Home";
-import { Favorites } from "./pages/Home";
+import { Favorites } from "./pages/Favorites";
 
 function App() {
   return (

@@ -1,5 +1,5 @@
-import axios, { CancelTokenSource } from 'axios';
-import { Pokemon, PokemonListResponse } from '@/types/pokemon';
+import axios, { type CancelTokenSource } from 'axios';
+import type { Pokemon, PokemonListResponse } from '../types/pokemon';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 const cache = new Map<string, unknown>();

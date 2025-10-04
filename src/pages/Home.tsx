@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Pokemon } from '@/types/pokemon';
-import { api } from '@/lib/api';
-import { PokemonCard } from '@/components/PokemonCard';
-import { SearchBar } from '@/components/SearchBar';
-import { Filters } from '@/components/Filters';
-import { PokemonDetail } from '@/components/PokemonDetail';
-import { useSearch } from '@/hooks/useSearch';
-import { usePokemonContext } from '@/context/PokemonContext';
+import type { Pokemon } from "../types/pokemon";
+import { api } from '../lib/api';
+import { PokemonCard } from '../components/PokemonCard';
+import { SearchBar } from '../components/SearchBar';
+import { Filters } from '../components/Filters';
+import { PokemonDetail } from '../components/PokemonDetail';
+import { useSearch } from '../hooks/useSearch';
+import { usePokemonContext } from '../context/PokemonContext';
 
 export function Home() {
   const [pokemon, setPokemon] = useState<Pokemon[]>([]);
@@ -29,7 +29,7 @@ export function Home() {
     try {
       const data = await api.getPokemonList(offset, 20);
       const detailedPokemon = await Promise.all(
-        data.results.map(p => api.getPokemon(p.name))
+        data.results.map((p: { name: string | number; }) => api.getPokemon(p.name))
       );
       
       setPokemon(prev => [...prev, ...detailedPokemon]);

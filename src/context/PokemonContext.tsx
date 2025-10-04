@@ -3,9 +3,9 @@ import {
   useContext,
   useState,
   useEffect,
-  ReactNode,
+  type ReactNode,
 } from "react";
-import { Pokemon, SortOption, FilterType } from "@/types/pokemon";
+import type { Pokemon, SortOption, FilterType } from "../types/pokemon";
 
 interface PokemonContextType {
   favorites: number[];
